@@ -1,6 +1,8 @@
 package com.example.demo.security;
 
+import com.example.demo.config.RateLimitProperties;
 import io.github.bucket4j.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.servlet.*;
@@ -15,10 +17,19 @@ public class RateLimitFilter implements Filter {
 
     private final Map<String, Bucket> cache = new ConcurrentHashMap<>();
 
+    private final RateLimitProperties properties;
+
+    @Autowired
+    public RateLimitFilter(RateLimitProperties properties) {
+        this.properties = properties;
+    }
+
     private Bucket createNewBucket() {
-        // Allow 3 tokens per minute
         return Bucket4j.builder()
-                .addLimit(Bandwidth.classic(3, Refill.greedy(3, Duration.ofMinutes(1))))
+                .addLimit(Bandwidth.classic(
+                        properties.getCapacity(),
+                        Refill.greedy(properties.getCapacity(), Duration.ofMinutes(properties.getDurationMinutes()))
+                ))
                 .build();
     }
 
@@ -29,7 +40,6 @@ public class RateLimitFilter implements Filter {
         HttpServletRequest request = (HttpServletRequest) req;
         HttpServletResponse response = (HttpServletResponse) res;
 
-        // Apply only to /api/auth/register
         if (!request.getRequestURI().equals("/api/auth/register")) {
             chain.doFilter(request, response);
             return;
@@ -37,11 +47,18 @@ public class RateLimitFilter implements Filter {
 
         String ip = request.getRemoteAddr();
         Bucket bucket = cache.computeIfAbsent(ip, k -> createNewBucket());
+        ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
 
-        if (bucket.tryConsume(1)) {
+        // Set headers even if request is blocked
+        response.setHeader("X-Rate-Limit-Limit", String.valueOf(properties.getCapacity()));
+        response.setHeader("X-Rate-Limit-Remaining", String.valueOf(Math.max(0, probe.getRemainingTokens())));
+
+        if (probe.isConsumed()) {
             chain.doFilter(request, response);
         } else {
-            response.setStatus(429); // Too Many Requests
+            long waitForRefillSeconds = probe.getNanosToWaitForRefill() / 1_000_000_000;
+            response.setHeader("X-Rate-Limit-Reset", String.valueOf(waitForRefillSeconds));
+            response.setStatus(429);
             response.getWriter().write("Too many registration attempts. Please try again later.");
         }
     }
