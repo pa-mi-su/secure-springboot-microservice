@@ -1,15 +1,21 @@
 package com.example.demo.controller;
 
+import com.example.demo.dto.ErrorResponse;
+import com.example.demo.dto.LoginRequest;
+import com.example.demo.dto.LoginResponse;
+import com.example.demo.dto.RegisterRequest;
 import com.example.demo.entity.User;
 import com.example.demo.repository.UserRepository;
 import com.example.demo.security.JwtUtil;
+import com.example.demo.service.EmailService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -18,37 +24,74 @@ public class AuthController {
     private final UserRepository userRepository;
     private final JwtUtil jwtUtil;
     private final BCryptPasswordEncoder passwordEncoder;
+    private final EmailService emailService;
+    private final Map<String, String> verificationTokens = new ConcurrentHashMap<>();
+
+
 
     public AuthController(UserRepository userRepository,
                           JwtUtil jwtUtil,
-                          BCryptPasswordEncoder passwordEncoder) {
+                          BCryptPasswordEncoder passwordEncoder, EmailService emailService) {
         this.userRepository = userRepository;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
     }
+
+
 
     // 🔐 User Registration Endpoint
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody User newUser) {
-        if (userRepository.findByUsername(newUser.getUsername()).isPresent()) {
+    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Username already exists");
         }
 
-        newUser.setPassword(passwordEncoder.encode(newUser.getPassword()));
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already registered");
+        }
+
+        User newUser = new User();
+        newUser.setUsername(request.getUsername());
+        newUser.setEmail(request.getEmail());
+        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
+        newUser.setVerified(false);
+
         userRepository.save(newUser);
-        return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
+
+        String token = UUID.randomUUID().toString();
+        verificationTokens.put(token, newUser.getEmail());
+        emailService.sendVerificationEmail(newUser.getEmail(), token);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body("User registered. Please check your email to verify your account.");
     }
 
     // 🔐 Login Endpoint with JWT
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody Map<String, String> payload) {
-        return userRepository.findByUsername(payload.get("username"))
-                .filter(user -> passwordEncoder.matches(payload.get("password"), user.getPassword()))
-                .map(user -> {
-                    Map<String, String> response = new HashMap<>();
-                    response.put("token", jwtUtil.generateToken(user.getUsername()));
-                    return ResponseEntity.ok(response);
-                })
-                .orElse(ResponseEntity.status(401).body(Map.of("error", "Invalid credentials")));
+    public ResponseEntity<Object> login(@RequestBody LoginRequest request) {
+        return userRepository.findByUsername(request.getUsername())
+                .filter(User::isVerified)
+                .filter(user -> passwordEncoder.matches(request.getPassword(), user.getPassword()))
+                .<ResponseEntity<Object>>map(user ->
+                        ResponseEntity.ok(new LoginResponse(jwtUtil.generateToken(user.getUsername()))))
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body(new ErrorResponse("Invalid credentials or unverified account", 401)));
+    }
+
+    @GetMapping("/verify")
+    public ResponseEntity<?> verifyEmail(@RequestParam String token) {
+        String email = verificationTokens.remove(token);
+        if (email == null) {
+            return ResponseEntity.badRequest().body("Invalid or expired token");
+        }
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        user.setVerified(true);
+        userRepository.save(user);
+
+        return ResponseEntity.ok("Email verified successfully. You can now log in.");
     }
 }
