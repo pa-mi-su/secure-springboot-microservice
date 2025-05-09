@@ -1,4 +1,4 @@
-package com.example.demo.dto;
+package com.example.userms.dto;
 
 public class RegisterRequest {
     private String username;

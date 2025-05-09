@@ -1,13 +1,13 @@
-package com.example.demo.controller;
+package com.example.userms.controller;
 
-import com.example.demo.dto.ErrorResponse;
-import com.example.demo.dto.LoginRequest;
-import com.example.demo.dto.LoginResponse;
-import com.example.demo.dto.RegisterRequest;
-import com.example.demo.entity.User;
-import com.example.demo.repository.UserRepository;
-import com.example.demo.security.JwtUtil;
-import com.example.demo.service.EmailService;
+import com.example.userms.dto.ErrorResponse;
+import com.example.userms.dto.LoginRequest;
+import com.example.userms.dto.LoginResponse;
+import com.example.userms.dto.RegisterRequest;
+import com.example.userms.entity.User;
+import com.example.userms.repository.UserRepository;
+import com.example.userms.security.JwtUtil;
+import com.example.userms.service.EmailService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;

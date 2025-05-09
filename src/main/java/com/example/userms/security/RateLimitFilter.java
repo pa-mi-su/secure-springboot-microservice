@@ -1,6 +1,6 @@
-package com.example.demo.security;
+package com.example.userms.security;
 
-import com.example.demo.config.RateLimitProperties;
+import com.example.userms.config.RateLimitProperties;
 import io.github.bucket4j.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

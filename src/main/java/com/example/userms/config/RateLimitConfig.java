@@ -1,6 +1,6 @@
-package com.example.demo.config;
+package com.example.userms.config;
 
-import com.example.demo.security.RateLimitFilter;
+import com.example.userms.security.RateLimitFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

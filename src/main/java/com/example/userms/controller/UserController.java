@@ -1,7 +1,7 @@
-package com.example.demo.controller;
+package com.example.userms.controller;
 
-import com.example.demo.dto.UserResponse;
-import com.example.demo.repository.UserRepository;
+import com.example.userms.dto.UserResponse;
+import com.example.userms.repository.UserRepository;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;

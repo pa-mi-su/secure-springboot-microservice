@@ -1,6 +1,6 @@
-package com.example.demo.security;
+package com.example.userms.security;
 
-import com.example.demo.repository.UserRepository;
+import com.example.userms.repository.UserRepository;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
