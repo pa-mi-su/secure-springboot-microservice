@@ -1,0 +1,33 @@
+# Java
+*.class
+*.jar
+*.war
+*.log
+hs_err_pid*
+
+# Maven
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IntelliJ
+.idea/
+*.iml
+out/
+
+# OS/system files
+.DS_Store
+Thumbs.db
+
+# Secrets
+.env
+*.key
+*.pem
+id_rsa
+id_ed25519
+id_rsa.pub
+id_ed25519.pub
+
+# Config files
+application.yml
+application.yaml
+docker-compose.override.yml
