@@ -2,15 +2,17 @@
 services:
 
   jenkins:
-    image: jenkins/jenkins:lts
+    image: jenkins/jenkins:lts-jdk11
     container_name: jenkins
     ports:
-      - "8082:8080"       # Use port 8082 on your host to access Jenkins UI
-      - "50000:50000"     # For Jenkins agent communication (optional but common)
+      - "8082:8080"
     volumes:
       - jenkins_home:/var/jenkins_home
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /usr/bin/docker:/usr/bin/docker
+      - /var/run/docker.sock:/var/run/docker.sock  # 👈 gives Jenkins access to host Docker
+      - /usr/bin/docker:/usr/bin/docker            # 👈 mounts the Docker CLI binary
+    user: root  # 👈 required to access docker.sock
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
     restart: unless-stopped
 
   postgres:
