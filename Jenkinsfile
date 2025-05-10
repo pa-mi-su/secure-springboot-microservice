@@ -4,8 +4,7 @@ pipeline {
                 image 'maven:3.8.5-openjdk-11'
                 args '-v /var/run/docker.sock:/var/run/docker.sock'
             }
-        }
-
+    }
     environment {
         DOCKER_BUILDKIT = 1
     }
