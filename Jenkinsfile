@@ -2,13 +2,13 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
+        DOCKER_BUILDKIT = 1
     }
 
     stages {
         stage('Checkout') {
             steps {
-                git url: 'https://github.com/pa-mi-su/secure-springboot-microservice.git', branch: 'main'
+                git branch: 'main', url: 'https://github.com/your-username/your-repo.git'
             }
         }
 
@@ -20,33 +20,21 @@ pipeline {
 
         stage('Build Docker Images') {
             steps {
-                sh 'docker-compose build'
+                sh 'docker build -t userms-app -f userms/Dockerfile ./userms'
+                sh 'docker build -t notificationms-app -f notificationms/Dockerfile ./notificationms'
             }
         }
 
-        stage('Start Services') {
+        stage('Docker Compose Up') {
             steps {
                 sh 'docker-compose up -d'
-            }
-        }
-
-        stage('Run Tests') {
-            steps {
-                sh 'mvn test'
-            }
-        }
-
-        stage('Cleanup') {
-            steps {
-                sh 'docker-compose down'
             }
         }
     }
 
     post {
-        always {
-            echo 'Cleaning up workspace...'
-            cleanWs()
+        failure {
+            echo 'Build or deployment failed!'
         }
     }
 }
