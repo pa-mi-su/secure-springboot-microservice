@@ -1,6 +1,15 @@
-version: "3.8"
 
 services:
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    ports:
+      - "8082:8080"       # Use port 8082 on your host to access Jenkins UI
+      - "50000:50000"     # For Jenkins agent communication (optional but common)
+    volumes:
+      - jenkins_home:/var/jenkins_home
+    restart: unless-stopped
 
   postgres:
     image: postgres:13
@@ -71,3 +80,4 @@ services:
 
 volumes:
   pgdata:
+  jenkins_home:
